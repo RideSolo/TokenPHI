@@ -25,22 +25,6 @@ library SafeMath {
         assert(c >= a);
         return c;
     }
-
-    function max64(uint64 a, uint64 b) internal pure returns (uint64) {
-        return a >= b ? a : b;
-    }
-
-    function min64(uint64 a, uint64 b) internal pure returns (uint64) {
-        return a < b ? a : b;
-    }
-
-    function max256(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a >= b ? a : b;
-    }
-
-    function min256(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
 }
 
 
@@ -100,7 +84,7 @@ contract BasicToken is ERC20Basic {
     function transfer(address _to, uint256 _value) public onlyPayloadSize(2) returns (bool) {
         uint256 timeCurrent = now;
         //timeCurrent = 1538438400; //Tue, 02 Oct 2018 00:00:00 GMT  $$$ for test's
-        timeCurrent = 1543708800; // Sun, 02 Dec 2018 00:00:00 GMT  $$$ for test's
+        //timeCurrent = 1543708800; // Sun, 02 Dec 2018 00:00:00 GMT  $$$ for test's
         require(timeCurrent >= timeFreezeTransfer);
         require(_to != address(0));
         require(_value <= balances[msg.sender]);
@@ -135,6 +119,11 @@ contract StandardToken is ERC20, BasicToken {
      * @param _value uint256 the amount of tokens to be transferred
      */
     function transferFrom(address _from, address _to, uint256 _value) public onlyPayloadSize(3) returns (bool) {
+        uint256 timeCurrent = now;
+        //timeCurrent = 1538438400; //Tue, 02 Oct 2018 00:00:00 GMT  $$$ for test's
+        //timeCurrent = 1543708800; // Sun, 02 Dec 2018 00:00:00 GMT  $$$ for test's
+        require(timeCurrent >= timeFreezeTransfer);
+
         require(_to != address(0));
         require(_value <= balances[_from]);
         require(_value <= allowed[_from][msg.sender]);
@@ -231,7 +220,6 @@ contract MintableToken is StandardToken, Ownable {
     uint8 public constant decimals = 18;
 
     event Mint(address indexed to, uint256 amount);
-    event MintFinished();
 
     bool public mintingFinished;
 
@@ -255,16 +243,6 @@ contract MintableToken is StandardToken, Ownable {
         balances[_owner] = balances[_owner].sub(_amount);
         emit Mint(_to, _amount);
         emit Transfer(_owner, _to, _amount);
-        return true;
-    }
-
-    /**
-     * @dev Function to stop minting tokens.
-     * @return True if the operation was successful.
-     */
-    function finishMinting() onlyOwner canMint internal returns (bool) {
-        mintingFinished = true;
-        emit MintFinished();
         return true;
     }
 
@@ -320,29 +298,27 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
     uint256 public constant INITIAL_SUPPLY = 63 * 10**6 * (10 ** uint256(decimals));
     uint256 public    fundForSale = 60250 * 10**3 * (10 ** uint256(decimals));
 
-    uint256 public fundTeam =          150 * 10**3 * (10 ** uint256(decimals));
-    uint256 public fundAirdropPreIco = 250 * 10**3 * (10 ** uint256(decimals));
-    uint256 public fundAirdropIco =    150 * 10**3 * (10 ** uint256(decimals));
-    uint256 public fundBounty     =    100 * 10**3 * (10 ** uint256(decimals));
-    uint256 public fundAdvisor   =    210 * 10**3 * (10 ** uint256(decimals));
-    uint256 public fundReferal    =    1890 * 10**3 * (10 ** uint256(decimals));
-//2750
+    uint256 fundTeam =          150 * 10**3 * (10 ** uint256(decimals));
+    uint256 fundAirdropPreIco = 250 * 10**3 * (10 ** uint256(decimals));
+    uint256 fundAirdropIco =    150 * 10**3 * (10 ** uint256(decimals));
+    uint256 fundBounty     =    100 * 10**3 * (10 ** uint256(decimals));
+    uint256 fundAdvisor   =    210 * 10**3 * (10 ** uint256(decimals));
+    uint256 fundReferal    =    1890 * 10**3 * (10 ** uint256(decimals));
 
     uint256 limitPreIco = 12 * 10**5 * (10 ** uint256(decimals));
 
-    address public addressFundTeam = 0x26cfc82A77ECc5a493D72757936A78A089FA592a;
-    address public addressFundAirdropPreIco = 0x87953BAE7A92218FAcE2DDdb30AB2193263394Ef;
-    address public addressFundAirdropIco = 0xaA8C9cA32cC8A6A7FF5eCB705787C22d9400F377;
+    address addressFundTeam = 0x26cfc82A77ECc5a493D72757936A78A089FA592a;
+    address addressFundAirdropPreIco = 0x87953BAE7A92218FAcE2DDdb30AB2193263394Ef;
+    address addressFundAirdropIco = 0xaA8C9cA32cC8A6A7FF5eCB705787C22d9400F377;
 
-    address public addressFundBounty =  0x253fBeb28dA7E85c720F66bbdCFC4D9418196EE5;
-    address public addressFundAdvisor = 0x61eAEe13A2a3805b57B46571EE97B6faf95fC34d;
-    address public addressFundReferal = 0x4BfB1bA71952DAC3886DCfECDdE2a4Fea2A06bDb;
+    address addressFundBounty =  0x253fBeb28dA7E85c720F66bbdCFC4D9418196EE5;
+    address addressFundAdvisor = 0x61eAEe13A2a3805b57B46571EE97B6faf95fC34d;
+    address addressFundReferal = 0x4BfB1bA71952DAC3886DCfECDdE2a4Fea2A06bDb;
 
-    uint256 startTimePreIco = 1538406000; // Mon, 01 Oct 2018 15:00:00 GMT
-    uint256 endTimePreIco =   1539129600; // Wed, 10 Oct 2018 00:00:00 GMT
-    uint256 startTimeIco =    1541300400; // Sun, 04 Nov 2018 03:00:00 GMT
-    uint256 endTimeIco =      1542931200; // Fri, 23 Nov 2018 00:00:00 GMT
-    uint256 defrostDate =     1543017600; // Sat, 24 Nov 2018 00:00:00 GMT
+    uint256 public startTimePreIco = 1538406000; // Mon, 01 Oct 2018 15:00:00 GMT
+    uint256 public endTimePreIco =   1539129600; // Wed, 10 Oct 2018 00:00:00 GMT
+    uint256 public startTimeIco =    1541300400; // Sun, 04 Nov 2018 03:00:00 GMT
+    uint256 public endTimeIco =      1542931200; // Fri, 23 Nov 2018 00:00:00 GMT
 
     uint256 percentReferal = 5;
 
@@ -353,14 +329,13 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
     event MinWeiLimitReached(address indexed sender, uint256 weiAmount);
     event Burn(address indexed burner, uint256 value);
     event CurrentPeriod(uint period);
-    event Finalized();
 
     constructor(address _owner, address _wallet) public
     Crowdsale(_wallet)
     {
         require(_owner != address(0));
         owner = _owner;
-        owner = msg.sender; // $$$ for test's
+        //owner = msg.sender; // $$$ for test's
         transfersEnabled = true;
         mintingFinished = false;
         totalSupply = INITIAL_SUPPLY;
@@ -394,7 +369,7 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
 
     function getTotalAmountOfTokens(uint256 _weiAmount) internal returns (uint256) {
         uint256 currentDate = now;
-        currentDate = 1538438400; // (02 Oct 2018) // $$$ for test's
+        //currentDate = 1538438400; // (02 Oct 2018) // $$$ for test's
         //currentDate = 1540051200; // (20 Oct 2018) // $$$ for test's
         uint currentPeriod = 0;
         currentPeriod = getPeriod(currentDate);
@@ -434,8 +409,7 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
         deposited[investor] = deposited[investor].add(msg.value);
     }
 
-    function makeReferalBonus(uint256 _amountToken) public returns(uint256 _refererTokens) { // $$$ for test's
-    //function makeReferalBonus(uint256 _amountToken) internal returns(uint256 _refererTokens) {
+    function makeReferalBonus(uint256 _amountToken) internal returns(uint256 _refererTokens) {
         _refererTokens = 0;
         if(msg.data.length == 20) {
             address referer = bytesToAddress(bytes(msg.data));
