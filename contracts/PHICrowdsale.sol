@@ -80,6 +80,7 @@ contract ERC20 {
 
 contract BasicToken is ERC20Basic {
     using SafeMath for uint256;
+    uint256 timeFreezeTransfer = 1543017600; //Sat, 24 Nov 2018 00:00:00 GMT
 
     mapping (address => uint256) balances;
 
@@ -97,6 +98,10 @@ contract BasicToken is ERC20Basic {
     * @param _value The amount to be transferred.
     */
     function transfer(address _to, uint256 _value) public onlyPayloadSize(2) returns (bool) {
+        uint256 timeCurrent = now;
+        //timeCurrent = 1538438400; //Tue, 02 Oct 2018 00:00:00 GMT  $$$ for test's
+        timeCurrent = 1543708800; // Sun, 02 Dec 2018 00:00:00 GMT  $$$ for test's
+        require(timeCurrent >= timeFreezeTransfer);
         require(_to != address(0));
         require(_value <= balances[msg.sender]);
         require(transfersEnabled);

@@ -44,7 +44,7 @@ contract('PHICrowdsale', (accounts) => {
         assert.equal(0, tokenAllocatedBefore);
         //assert.equal(Number(rate*buyWei), Number(tokenAllocatedAfter));
 
-       var balanceAccountTwoAfter = await contract.balanceOf(accounts[2]);
+        var balanceAccountTwoAfter = await contract.balanceOf(accounts[2]);
         assert.isTrue(balanceAccountTwoBefore < balanceAccountTwoAfter);
         assert.equal(0, balanceAccountTwoBefore);
         assert.equal(rate*buyWei, balanceAccountTwoAfter);
@@ -64,19 +64,6 @@ contract('PHICrowdsale', (accounts) => {
         assert.equal(0, balanceAccountThreeBefore);
         assert.equal(rateNew*buyWeiNew, balanceAccountThreeAfter);
 
-    });
-
-
-    it('verification tokens for referal bonus', async ()  => {
-        var balanceAccountForBefore = await contract.balanceOf(accounts[4]);
-        var balanceAccountFiveBefore = await contract.balanceOf(accounts[5]);
-        var addressFive = accounts[5];
-        await contract.buyTokens(accounts[4],{from:accounts[4], value:buyWei, data:addressFive});
-        var balanceAccountForAfter = await contract.balanceOf(accounts[4]);
-        var balanceAccountFiveAfter = await contract.balanceOf(accounts[5]);
-        //var ccc = await contract.makeReferalBonus.call(rateNew*buyWeiNew, {from:accounts[4], data:accounts[5]});
-        console.log("balanceAccountFiveAfter = " + balanceAccountFiveAfter)
-        console.log("balanceAccountForAfter = " + balanceAccountForAfter)
     });
 
 
@@ -139,6 +126,14 @@ contract('PHICrowdsale', (accounts) => {
         assert.equal(true, totalSupplyBefore > totalSupplyAfter);
         assert.equal(true, fundForSaleBefore > fundForSaleAfter);
     });
+
+    it('verification freeze transfer tokens', async ()  => {
+        var balanceAccountTwoBefore = await contract.balanceOf(accounts[2]);
+        await contract.transfer(accounts[3], buyWeiMin, {from:accounts[2]});
+        var balanceAccountTwoAfter = await contract.balanceOf(accounts[2]);
+        assert.equal(true, balanceAccountTwoAfter < balanceAccountTwoBefore);
+    });
+
 });
 
 
