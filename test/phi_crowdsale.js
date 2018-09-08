@@ -66,14 +66,17 @@ contract('PHICrowdsale', (accounts) => {
 
     });
 
+
     it('verification tokens for referal bonus', async ()  => {
         var balanceAccountForBefore = await contract.balanceOf(accounts[4]);
         var balanceAccountFiveBefore = await contract.balanceOf(accounts[5]);
-        await contract.buyTokens(accounts[4],{from:accounts[4], value:buyWeiNew, data:accounts[5]});
+        var addressFive = accounts[5];
+        await contract.buyTokens(accounts[4],{from:accounts[4], value:buyWei, data:addressFive});
         var balanceAccountForAfter = await contract.balanceOf(accounts[4]);
         var balanceAccountFiveAfter = await contract.balanceOf(accounts[5]);
-        var ccc = await contract.makeReferalBonus.call(rateNew*buyWeiNew, {from:accounts[4], data:accounts[5]});
-        //console.log("balanceAccountFiveAfter = " + ccc)
+        //var ccc = await contract.makeReferalBonus.call(rateNew*buyWeiNew, {from:accounts[4], data:accounts[5]});
+        console.log("balanceAccountFiveAfter = " + balanceAccountFiveAfter)
+        console.log("balanceAccountForAfter = " + balanceAccountForAfter)
     });
 
 
@@ -104,6 +107,38 @@ contract('PHICrowdsale', (accounts) => {
         assert.equal(0, Number(numberTokensMinWey));
     });
 
+    it('verification claim tokens', async ()  => {
+        var balanceAccountBefore = await contract.balanceOf(accounts[6]);
+        assert.equal(0, balanceAccountBefore);
+        await contract.buyTokens(accounts[6],{from:accounts[6], value:buyWei});
+        var balanceAccountAfter = await contract.balanceOf(accounts[6]);
+        await contract.transfer(contract.address,balanceAccountAfter,{from:accounts[6]});
+        var balanceContractBefore = await contract.balanceOf(contract.address);
+        assert.equal(buyWei*rate, balanceContractBefore);
+        var balanceAccountAfterTwo = await contract.balanceOf(accounts[1]);
+        assert.equal(0, balanceAccountAfterTwo);
+        var balanceOwnerBefore = await contract.balanceOf(owner);
+        await contract.claimTokens(contract.address,{from:accounts[0]});
+        var balanceContractAfter = await contract.balanceOf(contract.address);
+        assert.equal(0, balanceContractAfter);
+        var balanceOwnerAfter = await contract.balanceOf(owner);
+        assert.equal(true, balanceOwnerBefore<balanceOwnerAfter);
+    });
+
+    it('verification burning of tokens', async ()  => {
+        var balanceOwnerBefore = await contract.balanceOf(owner);
+        var totalSupplyBefore = await contract.totalSupply.call();
+        var fundForSaleBefore = await contract.fundForSale.call();
+
+        await contract.ownerBurnToken(1*10**18);
+
+        var balanceOwnerAfter = await contract.balanceOf(owner);
+        var totalSupplyAfter = await contract.totalSupply.call();
+        var fundForSaleAfter = await contract.fundForSale.call();
+        assert.equal(true, balanceOwnerBefore > balanceOwnerAfter);
+        assert.equal(true, totalSupplyBefore > totalSupplyAfter);
+        assert.equal(true, fundForSaleBefore > fundForSaleAfter);
+    });
 });
 
 

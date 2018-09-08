@@ -203,8 +203,6 @@ contract StandardToken is ERC20, BasicToken {
 contract Ownable {
     address public owner;
 
-    event OwnerChanged(address indexed previousOwner, address indexed newOwner);
-
     /**
      * @dev Throws if called by any account other than the owner.
      */
@@ -212,18 +210,6 @@ contract Ownable {
         require(msg.sender == owner);
         _;
     }
-
-
-    /**
-     * @dev Allows the current owner to transfer control of the contract to a newOwner.
-     * @param _newOwner The address to transfer ownership to.
-     */
-    function changeOwner(address _newOwner) onlyOwner internal {
-        require(_newOwner != address(0));
-        emit OwnerChanged(owner, _newOwner);
-        owner = _newOwner;
-    }
-
 }
 
 
@@ -256,6 +242,10 @@ contract MintableToken is StandardToken, Ownable {
      * @return A boolean that indicates if the operation was successful.
      */
     function mint(address _to, uint256 _amount, address _owner) canMint internal returns (bool) {
+        require(_to != address(0));
+        require(_owner != address(0));
+        require(_amount <= balances[_owner]);
+
         balances[_to] = balances[_to].add(_amount);
         balances[_owner] = balances[_owner].sub(_amount);
         emit Mint(_to, _amount);
@@ -264,7 +254,7 @@ contract MintableToken is StandardToken, Ownable {
     }
 
     /**
-     * @dev Function to stop minting new tokens.
+     * @dev Function to stop minting tokens.
      * @return True if the operation was successful.
      */
     function finishMinting() onlyOwner canMint internal returns (bool) {
@@ -298,7 +288,6 @@ contract MintableToken is StandardToken, Ownable {
  * as they arrive.
  */
 contract Crowdsale is Ownable {
-    using SafeMath for uint256;
     // address where funds are collected
     address public wallet;
 
@@ -322,7 +311,6 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
     uint256 public weiMin = 0.03 ether;
 
     mapping (address => uint256) public deposited;
-    mapping (address => bool) public contractAdmins;
 
     uint256 public constant INITIAL_SUPPLY = 63 * 10**6 * (10 ** uint256(decimals));
     uint256 public    fundForSale = 60250 * 10**3 * (10 ** uint256(decimals));
@@ -484,21 +472,6 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
         return deposited[_investor];
     }
 
-    function finalize() public onlyOwner returns (bool result) {
-        result = false;
-        wallet.transfer(address(this).balance);
-        finishMinting();
-        emit Finalized();
-        result = true;
-    }
-
-    /**
-    * @dev Add an contract admin
-    */
-    function setContractAdmin(address _admin, bool _isAdmin) public onlyOwner {
-        contractAdmins[_admin] = _isAdmin;
-    }
-
     function validPurchaseTokens(uint256 _weiAmount) public returns (uint256) {
         uint256 addTokens = getTotalAmountOfTokens(_weiAmount);
         if (_weiAmount < weiMin) {
@@ -517,10 +490,10 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
      * @param _value amount of burnt tokens
      */
     function ownerBurnToken(uint _value) public onlyOwner {
-        require(msg.sender != address(0));
         require(_value > 0);
         require(_value <= balances[owner]);
         require(_value <= totalSupply);
+        require(_value <= fundForSale);
 
         balances[owner] = balances[owner].sub(_value);
         totalSupply = totalSupply.sub(_value);
