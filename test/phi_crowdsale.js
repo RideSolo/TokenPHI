@@ -1,6 +1,4 @@
 var PHICrowdsale = artifacts.require("./PHICrowdsale.sol");
-//import assertRevert from './helpers/assertRevert';
-
 
 contract('PHICrowdsale', (accounts) => {
     var contract;
@@ -42,7 +40,6 @@ contract('PHICrowdsale', (accounts) => {
         var tokenAllocatedAfter = await contract.tokenAllocated.call();
         assert.isTrue(tokenAllocatedBefore < tokenAllocatedAfter);
         assert.equal(0, tokenAllocatedBefore);
-        //assert.equal(Number(rate*buyWei), Number(tokenAllocatedAfter));
 
         var balanceAccountTwoAfter = await contract.balanceOf(accounts[2]);
         assert.isTrue(balanceAccountTwoBefore < balanceAccountTwoAfter);
