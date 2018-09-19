@@ -91,24 +91,6 @@ contract('PHICrowdsale', (accounts) => {
         assert.equal(0, Number(numberTokensMinWey));
     });
 
-    it('verification claim tokens', async ()  => {
-        var balanceAccountBefore = await contract.balanceOf(accounts[6]);
-        assert.equal(0, balanceAccountBefore);
-        await contract.buyTokens(accounts[6],{from:accounts[6], value:buyWei});
-        var balanceAccountAfter = await contract.balanceOf(accounts[6]);
-        await contract.transfer(contract.address,balanceAccountAfter,{from:accounts[6]});
-        var balanceContractBefore = await contract.balanceOf(contract.address);
-        assert.equal(buyWei*rate, balanceContractBefore);
-        var balanceAccountAfterTwo = await contract.balanceOf(accounts[1]);
-        assert.equal(0, balanceAccountAfterTwo);
-        var balanceOwnerBefore = await contract.balanceOf(owner);
-        await contract.claimTokens(contract.address,{from:accounts[0]});
-        var balanceContractAfter = await contract.balanceOf(contract.address);
-        assert.equal(0, balanceContractAfter);
-        var balanceOwnerAfter = await contract.balanceOf(owner);
-        assert.equal(true, balanceOwnerBefore<balanceOwnerAfter);
-    });
-
     it('verification burning of tokens', async ()  => {
         var balanceOwnerBefore = await contract.balanceOf(owner);
         var totalSupplyBefore = await contract.totalSupply.call();
@@ -125,10 +107,35 @@ contract('PHICrowdsale', (accounts) => {
     });
 
     it('verification freeze transfer tokens', async ()  => {
+        //await contract.setTransferActive(true);
+        await contract.addToWhitelist(accounts[3]);
         var balanceAccountTwoBefore = await contract.balanceOf(accounts[2]);
         await contract.transfer(accounts[3], buyWeiMin, {from:accounts[2]});
         var balanceAccountTwoAfter = await contract.balanceOf(accounts[2]);
         assert.equal(true, balanceAccountTwoAfter < balanceAccountTwoBefore);
+    });
+
+    it('verification claim tokens', async ()  => {
+        var balanceAccountBefore = await contract.balanceOf(accounts[6]);
+        assert.equal(0, balanceAccountBefore);
+        await contract.buyTokens(accounts[6],{from:accounts[6], value:buyWei});
+        var balanceAccountAfter = await contract.balanceOf(accounts[6]);
+
+        await contract.addToWhitelist(accounts[6]);
+        await contract.addToWhitelist(contract.address);
+        await contract.addToWhitelist(accounts[0]);
+
+        await contract.transfer(contract.address,balanceAccountAfter,{from:accounts[6]});
+        var balanceContractBefore = await contract.balanceOf(contract.address);
+        assert.equal(buyWei*rate, balanceContractBefore);
+        var balanceAccountAfterTwo = await contract.balanceOf(accounts[1]);
+        assert.equal(0, balanceAccountAfterTwo);
+        var balanceOwnerBefore = await contract.balanceOf(owner);
+        await contract.claimTokens(contract.address,{from:accounts[0]});
+        var balanceContractAfter = await contract.balanceOf(contract.address);
+        assert.equal(0, balanceContractAfter);
+        var balanceOwnerAfter = await contract.balanceOf(owner);
+        assert.equal(true, balanceOwnerBefore<balanceOwnerAfter);
     });
 
 });

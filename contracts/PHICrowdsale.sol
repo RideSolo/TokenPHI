@@ -64,9 +64,10 @@ contract ERC20 {
 
 contract BasicToken is ERC20Basic {
     using SafeMath for uint256;
-    uint256 timeFreezeTransfer = 1543017600; //Sat, 24 Nov 2018 00:00:00 GMT
 
     mapping (address => uint256) balances;
+    mapping (address => bool) public whitelistPayee;
+
 
     /**
     * Protection against short address attack
@@ -76,19 +77,27 @@ contract BasicToken is ERC20Basic {
         _;
     }
 
+    function checkTransfer(address _to) public view {
+        bool permit = false;
+        if (!transfersEnabled) {
+            if (whitelistPayee[_to]) {
+                permit = true;
+            }
+        } else {
+            permit = true;
+        }
+        require(permit);
+    }
+
     /**
     * @dev transfer token for a specified address
     * @param _to The address to transfer to.
     * @param _value The amount to be transferred.
     */
     function transfer(address _to, uint256 _value) public onlyPayloadSize(2) returns (bool) {
-        uint256 timeCurrent = now;
-        //timeCurrent = 1538438400; //Tue, 02 Oct 2018 00:00:00 GMT  $$$ for test's
-        //timeCurrent = 1543708800; // Sun, 02 Dec 2018 00:00:00 GMT  $$$ for test's
-        require(timeCurrent >= timeFreezeTransfer);
+        checkTransfer(_to);
         require(_to != address(0));
         require(_value <= balances[msg.sender]);
-        require(transfersEnabled);
 
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -112,6 +121,7 @@ contract StandardToken is ERC20, BasicToken {
 
     mapping (address => mapping (address => uint256)) internal allowed;
 
+
     /**
      * @dev Transfer tokens from one address to another
      * @param _from address The address which you want to send tokens from
@@ -119,15 +129,11 @@ contract StandardToken is ERC20, BasicToken {
      * @param _value uint256 the amount of tokens to be transferred
      */
     function transferFrom(address _from, address _to, uint256 _value) public onlyPayloadSize(3) returns (bool) {
-        uint256 timeCurrent = now;
-        //timeCurrent = 1538438400; //Tue, 02 Oct 2018 00:00:00 GMT  $$$ for test's
-        //timeCurrent = 1543708800; // Sun, 02 Dec 2018 00:00:00 GMT  $$$ for test's
-        require(timeCurrent >= timeFreezeTransfer);
+        checkTransfer(_to);
 
         require(_to != address(0));
         require(_value <= balances[_from]);
         require(_value <= allowed[_from][msg.sender]);
-        require(transfersEnabled);
 
         balances[_from] = balances[_from].sub(_value);
         balances[_to] = balances[_to].add(_value);
@@ -329,6 +335,8 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
     event MinWeiLimitReached(address indexed sender, uint256 weiAmount);
     event Burn(address indexed burner, uint256 value);
     event CurrentPeriod(uint period);
+    event ChangeTime(address indexed owner, uint256 newValue, uint256 oldValue);
+    event ChangeAddressFund(address indexed owner, address indexed newAddress, address indexed oldAddress);
 
     constructor(address _owner, address _wallet) public
     Crowdsale(_wallet)
@@ -336,7 +344,7 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
         require(_owner != address(0));
         owner = _owner;
         //owner = msg.sender; // $$$ for test's
-        transfersEnabled = true;
+        transfersEnabled = false;
         mintingFinished = false;
         totalSupply = INITIAL_SUPPLY;
         bool resultMintForOwner = mintForFund(owner);
@@ -478,6 +486,89 @@ contract PHICrowdsale is Ownable, Crowdsale, MintableToken {
         totalSupply = totalSupply.sub(_value);
         fundForSale = fundForSale.sub(_value);
         emit Burn(msg.sender, _value);
+    }
+
+    /**
+     * @dev owner change time for startTimePreIco
+     * @param _value new time value
+     */
+    function setStartTimePreIco(uint256 _value) public onlyOwner {
+        require(_value > 0);
+        uint256 _oldValue = startTimePreIco;
+        startTimePreIco = _value;
+        emit ChangeTime(msg.sender, _value, _oldValue);
+    }
+
+
+    /**
+     * @dev owner change time for endTimePreIco
+     * @param _value new time value
+     */
+    function setEndTimePreIco(uint256 _value) public onlyOwner {
+        require(_value > 0);
+        uint256 _oldValue = endTimePreIco;
+        endTimePreIco = _value;
+        emit ChangeTime(msg.sender, _value, _oldValue);
+    }
+
+    /**
+     * @dev owner change time for startTimeIco
+     * @param _value new time value
+     */
+    function setStartTimeIco(uint256 _value) public onlyOwner {
+        require(_value > 0);
+        uint256 _oldValue = startTimeIco;
+        startTimeIco = _value;
+        emit ChangeTime(msg.sender, _value, _oldValue);
+    }
+
+    /**
+     * @dev owner change time for endTimeIco
+     * @param _value new time value
+     */
+    function setEndTimeIco(uint256 _value) public onlyOwner {
+        require(_value > 0);
+        uint256 _oldValue = endTimeIco;
+        endTimeIco = _value;
+        emit ChangeTime(msg.sender, _value, _oldValue);
+    }
+
+    /**
+     * @dev owner change address for FundReferal
+     * @param _newAddress new value of address
+     */
+    function setAddressFundReferal(address _newAddress) public onlyOwner {
+        require(_newAddress != address(0));
+        address _oldAddress = addressFundReferal;
+        addressFundReferal = _newAddress;
+        emit ChangeAddressFund(msg.sender, _newAddress, _oldAddress);
+    }
+
+    function setWallet(address _newWallet) public onlyOwner {
+        require(_newWallet != address(0));
+        address _oldWallet = wallet;
+        wallet = _newWallet;
+        emit ChangeAddressFund(msg.sender, _newWallet, _oldWallet);
+    }
+
+    /**
+    * @dev Adds single address to whitelist.
+    * @param _payee Address to be added to the whitelist
+    */
+    function addToWhitelist(address _payee) public onlyOwner {
+        whitelistPayee[_payee] = true;
+    }
+
+    /**
+     * @dev Removes single address from whitelist.
+     * @param _payee Address to be removed to the whitelist
+     */
+    function removeFromWhitelist(address _payee) public onlyOwner {
+        whitelistPayee[_payee] = false;
+    }
+
+    function setTransferActive(bool _status) public onlyOwner {
+        transfersEnabled = _status;
     }
 }
 
